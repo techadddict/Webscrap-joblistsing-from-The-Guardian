@@ -1,0 +1,73 @@
+# simple example to illustrate scraping from a website
+
+# import libraries
+# this module allows access to websites via code.
+
+import urllib
+
+# this module helps us to get data out of HTML and XML files
+from bs4 import BeautifulSoup
+# this module helps us to create dataframes
+import pandas as pd
+# this module helps us to write data to a csv/excel file
+import csv
+
+# create empty lists
+job_titles1=[]
+recruiting_companies1=[]
+location1=[]
+salaries1= []
+job_descriptions1=[]
+job_listings=pd.DataFrame()
+
+#base link to the page you want to scrape- here we are scraping job listings for the guardian website
+  
+base_url='https://jobs.theguardian.com/jobs/london-greater-/direct-employer/'
+#create numbers for the pages you want to scrap
+pages = list(map(str,range(1,5)))
+# use exception handlers to handle exceptions if url is invalid or if it cannot be scraped and print exception
+try:
+    for n in pages:
+        url = base_url + n +'/'
+        
+            
+
+        # send request to webserver
+        request_out = urllib.request.Request(url, headers={'User-Agent' : "Magic Browser"})
+        
+        response = urllib.request.urlopen( request_out)
+        
+        # create  a beautifulSoup object that we will use to get data from links
+        soup = BeautifulSoup(response, 'html.parser')
+
+        # search for the links with the data you are interested in
+        job_titles=soup.findAll('a', {'class':"js-clickable-area-link"})
+        recruiting_companies=soup.findAll('li', {'class':"lister__meta-item lister__meta-item--recruiter"})
+        location=soup.findAll('li', {'class':"lister__meta-item lister__meta-item--location"})
+        salaries= soup.findAll('li', {'class':"lister__meta-item lister__meta-item--salary"})
+        job_descriptions=soup.findAll('p', {'class':"lister__description js-clamp-2"})
+
+
+        # populate lists by appending results from current page to those for the previous page 
+        job_titles1=job_titles1 + [title.text for title in job_titles]
+        recruiting_companies1=recruiting_companies1 + [company.text for company in  recruiting_companies ]
+        location1=location1+[city.text for city in location]
+        salaries1=salaries1+[salary.text for salary in salaries]
+        job_descriptions1=job_descriptions1+[description.text for description in job_descriptions]
+
+
+except Exception as e:
+       print(e)
+
+# populate dataframe with text version of the variables we got from the soup object
+      
+job_listings['Job_title']=job_titles1
+job_listings['Recruiting_company']=recruiting_companies1
+job_listings['City']=location1
+job_listings['Salary']=salaries1
+job_listings['job_description']=job_descriptions1
+#job_listings12=job_listings1.append(job_listings2, ignore_index=True)
+#job_listings123=job_listings12.append(job_listings3, ignore_index=True)
+ 
+ #write data to a csv fil
+job_listings.to_csv('/Users/pathandfilename.csv', index=False, encoding='utf-8')
